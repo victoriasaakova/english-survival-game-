@@ -1,0 +1,16 @@
+{
+  "name": "Innerworld — мой английский",
+  "short_name": "Innerworld",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f5f0",
+  "theme_color": "#245d4d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
