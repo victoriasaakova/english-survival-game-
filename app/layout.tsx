@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
   title: "Innerworld — English, in your own words",
-  description: "Ваш английский. Ваши истории. Ваш мир.",
+  description:
+    "Личное обучение B2 → C1: роли, диалоги, словарь и материалы обо мне.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

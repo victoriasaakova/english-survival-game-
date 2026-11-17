@@ -3,8 +3,9 @@ export async function POST(req: Request) {
   const denied = await authorize(req);
   if (denied) return denied;
   try {
-    const sdp = await req.text();
-    if (sdp.length > 50000 || !sdp.startsWith("v="))
+    const config = await req.json();
+    const sdp = config.sdp;
+    if (typeof sdp !== "string" || sdp.length > 50000 || !sdp.startsWith("v="))
       return new Response("Invalid SDP", { status: 400 });
     const form = new FormData();
     form.set("sdp", sdp);
@@ -14,7 +15,16 @@ export async function POST(req: Request) {
         type: "realtime",
         model: process.env.OPENAI_REALTIME_MODEL || "gpt-realtime",
         instructions:
-          "You are an A2 English tutor. Speak slowly and naturally. Ask one short question at a time about the learner’s chosen interests and personal stories. Never invent their biography. Give at most two corrections and invite a retry. Explain in Russian if requested. Keep responses brief.",
+          "You are an English tutor for a B2 learner aiming at C1. Conduct the selected role and format. Ask one question at a time, give precise brief corrections and retries. Do not invent learner biography or assess from unavailable evidence. Follow the learner choices in this configuration: " +
+          JSON.stringify({
+            role: config.lesson?.role,
+            topic: config.lesson?.topic,
+            format: config.lesson?.format,
+            focus: config.lesson?.focus,
+            request: config.lesson?.request,
+            rules: config.rules,
+            history: config.lesson?.messages?.slice(-16),
+          }).slice(0, 18000),
         audio: {
           input: { transcription: { model: "gpt-4o-mini-transcribe" } },
           output: { voice: "marin" },
