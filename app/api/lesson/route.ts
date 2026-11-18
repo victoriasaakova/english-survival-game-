@@ -1,12 +1,13 @@
+import { gameInstructions } from "@/lib/games";
 import { authorize } from "@/lib/server";
-import { lessonPrompt } from "@/lib/lesson-prompt";
+import { fullLessonPrompt } from "@/lib/lesson-prompt";
 export async function POST(req: Request) {
   const denied = await authorize(req);
   if (denied) return denied;
   try {
     const b = await req.json();
     if (
-      !["chat", "analyse", "practice", "evaluate"].includes(b.task) ||
+      !["chat", "analyse", "practice", "evaluate", "recall"].includes(b.task) ||
       !b.lesson ||
       !Array.isArray(b.lesson.messages) ||
       JSON.stringify(b).length > 150000
@@ -27,7 +28,10 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: process.env.OPENAI_TEXT_MODEL || "gpt-4.1-mini",
         messages: [
-          { role: "system", content: lessonPrompt },
+          {
+            role: "system",
+            content: fullLessonPrompt + "\n" + gameInstructions(b.lesson?.game),
+          },
           { role: "user", content: JSON.stringify(b) },
         ],
         response_format: { type: "json_object" },
@@ -40,6 +44,15 @@ export async function POST(req: Request) {
     const out = JSON.parse(data.choices[0].message.content);
     if (b.task === "chat" && typeof out.reply !== "string") throw Error();
     if (b.task === "analyse") {
+      if (
+        !Array.isArray(out.sections) ||
+        out.sections.length < 6 ||
+        out.sections.some(
+          (s: { title: string; text: string }) =>
+            typeof s.title !== "string" || typeof s.text !== "string",
+        )
+      )
+        throw Error();
       for (const k of [
         "summary",
         "languageFeedback",
@@ -72,6 +85,13 @@ export async function POST(req: Request) {
     )
       throw Error();
     if (b.task === "evaluate" && typeof out.feedback !== "string")
+      throw Error();
+    if (
+      b.task === "recall" &&
+      (typeof out.passed !== "boolean" ||
+        typeof out.novel !== "boolean" ||
+        typeof out.feedback !== "string")
+    )
       throw Error();
     return Response.json(out);
   } catch {

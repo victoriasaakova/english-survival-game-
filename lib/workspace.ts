@@ -1,3 +1,4 @@
+import type { GameConfig } from "./games";
 export type Role = {
   id: string;
   name: string;
@@ -27,6 +28,15 @@ export type Vocabulary = {
   expression: string;
   meaning: string;
   example: string;
+  source?: string;
+  priority?: boolean;
+  retrieval?: "catalogue" | "recognized" | "independent";
+  review?: {
+    introduced: string;
+    passed: number[];
+    retry: string | null;
+    history: { date: string; success: boolean; evidence: string }[];
+  };
 };
 export type Question = {
   id: string;
@@ -50,6 +60,7 @@ export type Note = {
   roleFeedback: string;
   nextLesson: string;
   sourceCount: number;
+  sections?: { title: string; text: string }[];
 };
 export type Conversation = {
   id: string;
@@ -65,6 +76,10 @@ export type Conversation = {
   draft: string;
   note?: Note;
   parentId?: string;
+  game?: GameConfig;
+  duration?: 15 | 30;
+  referenceText?: string;
+  referenceSource?: string;
 };
 export type Workspace = {
   version: 2;
@@ -78,6 +93,7 @@ export type Workspace = {
   entries: Entry[];
   exercises: Exercise[];
   legacy?: unknown;
+  importedSources?: string[];
 };
 export const defaultRoles: Role[] = [
   {
@@ -256,6 +272,7 @@ export function createLesson(
   };
 }
 export type Analysis = {
+  sections?: { title: string; text: string }[];
   summary: string;
   languageFeedback: string;
   roleFeedback: string;
@@ -317,6 +334,7 @@ export function applyAnalysis(
               roleFeedback: a.roleFeedback,
               nextLesson: a.nextLesson,
               sourceCount: sourceCount ?? l.messages.length,
+              sections: a.sections,
             },
           }
         : l,

@@ -1,3 +1,4 @@
+import { gameInstructions, updatedSkillRules } from "@/lib/games";
 import { authorize } from "@/lib/server";
 export async function POST(req: Request) {
   const denied = await authorize(req);
@@ -15,7 +16,11 @@ export async function POST(req: Request) {
         type: "realtime",
         model: process.env.OPENAI_REALTIME_MODEL || "gpt-realtime",
         instructions:
-          "You are an English tutor for a B2 learner aiming at C1. Conduct the selected role and format. Ask one question at a time, give precise brief corrections and retries. Do not invent learner biography or assess from unavailable evidence. Follow the learner choices in this configuration: " +
+          "You are an English tutor for a B2 learner aiming at C1. " +
+          updatedSkillRules +
+          "\n" +
+          gameInstructions(config.lesson?.game) +
+          "\nFollow learner configuration: " +
           JSON.stringify({
             role: config.lesson?.role,
             topic: config.lesson?.topic,

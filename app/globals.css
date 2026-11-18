@@ -1481,3 +1481,105 @@ summary {
 .retry-answer {
   margin-left: 27px;
 }
+.game-settings {
+  margin: 18px 0;
+}
+.game-settings .role-grid {
+  margin-bottom: 20px;
+}
+.game-settings .role-card {
+  padding: 18px;
+}
+.critic-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.critic-board article {
+  padding: 17px;
+  background: #f7f8f2;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.critic-board strong {
+  font-size: 12px;
+  display: block;
+}
+.critic-board small {
+  font-size: 9px;
+  color: #9aa68c;
+}
+.critic-board p {
+  font-size: 10px;
+}
+.critic-board blockquote {
+  font-size: 11px;
+}
+.in-chat-games {
+  padding: 10px 0;
+  margin-bottom: 12px;
+}
+.source-note {
+  margin: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.source-note pre {
+  white-space: pre-wrap;
+  font: inherit;
+  font-size: 11px;
+  color: #7b8871;
+  max-height: 420px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.catalogue-status {
+  display: block;
+  font-size: 9px;
+  color: #9eaa8e;
+  margin: 9px 0;
+}
+.voice-bridge {
+  margin: 12px 0;
+  padding: 13px;
+  background: #f3f5ed;
+  border-radius: 7px;
+}
+.voice-bridge p {
+  font-size: 10px;
+}
+.voice-bridge .button-row {
+  margin: 10px 0;
+}
+.voice-bridge textarea {
+  font-size: 11px;
+}
+.voice-bridge a {
+  color: #648052;
+  font-size: 10px;
+  text-decoration: underline;
+}
+@media (max-width: 700px) {
+  .critic-board {
+    grid-template-columns: 1fr;
+  }
+  .game-settings .role-card {
+    padding: 18px;
+  }
+  .source-note {
+    margin: 13px;
+  }
+}
+.recall-controls {
+  font-size: 9px;
+  margin: 8px 0;
+  color: #9aaa88;
+}
+.recall-controls small {
+  display: block;
+  font-size: 9px;
+}
+.recall-controls textarea {
+  font-size: 11px;
+}

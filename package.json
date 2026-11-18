@@ -6,7 +6,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
-    "test": "node --experimental-strip-types tests/learning.test.ts && node --experimental-strip-types tests/workspace.test.ts",
+    "test": "node --experimental-strip-types tests/learning.test.ts && node --experimental-strip-types tests/workspace.test.ts && node --experimental-strip-types tests/games.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

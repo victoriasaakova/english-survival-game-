@@ -18,11 +18,9 @@ export async function api(path: string, body: unknown, raw = false) {
     body: raw ? (body as BodyInit) : JSON.stringify(body),
   });
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({
-        error: "ИИ ещё не подключён к этой версии. Ваши данные сохранены.",
-      }));
+    const error = await res.json().catch(() => ({
+      error: "ИИ ещё не подключён к этой версии. Ваши данные сохранены.",
+    }));
     throw Error(error.error || "Ошибка сервиса");
   }
   return path === "realtime" ? res.text() : res.json();
