@@ -6,8 +6,9 @@
     "dev": "node scripts/dev.mjs",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
-    "test": "node --experimental-strip-types tests/learning.test.ts && node --experimental-strip-types tests/workspace.test.ts && node --experimental-strip-types tests/games.test.ts",
-    "typecheck": "tsc --noEmit"
+    "test": "node --experimental-strip-types tests/learning.test.ts && node --experimental-strip-types tests/workspace.test.ts && node --experimental-strip-types tests/games.test.ts && node --experimental-strip-types tests/hosted.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build:site": "node scripts/build-site.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
@@ -21,7 +22,8 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "prettier": "^3.10.1",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "esbuild": "^0.28.2"
   },
   "type": "module"
 }
