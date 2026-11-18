@@ -19,9 +19,19 @@ export function mergeLibrary(s: Workspace, library: Library): Workspace {
   }
   return {
     ...s,
-    lessons: merge(s.lessons, library.lessons),
-    vocabulary: merge(s.vocabulary, library.vocabulary),
-    exercises: merge(s.exercises, library.exercises),
+
+    vocabulary: merge(
+      s.vocabulary,
+      library.vocabulary.map((w) =>
+        w.lessonId.startsWith("source:") ? { ...w, lessonId: "" } : w,
+      ),
+    ),
+    exercises: merge(
+      s.exercises,
+      library.exercises.map((e) =>
+        e.lessonId.startsWith("source:") ? { ...e, lessonId: "" } : e,
+      ),
+    ),
     importedSources: [...(s.importedSources || []), library.revision],
   };
 }

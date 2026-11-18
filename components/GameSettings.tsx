@@ -1,6 +1,5 @@
 "use client";
 import {
-  games,
   criticBoard,
   boardModes,
   futureChapters,
@@ -8,26 +7,53 @@ import {
 } from "@/lib/games";
 export function GameSettings({
   value,
+  roles,
   onChange,
 }: {
   value?: GameConfig;
+  roles: import("@/lib/workspace").Role[];
   onChange: (v: GameConfig | undefined) => void;
 }) {
   return (
     <div className="game-settings">
-      <div className="role-grid">
-        {games.map((g) => (
-          <button
-            type="button"
-            key={g.id}
-            className={"role-card " + (value?.id === g.id ? "selected" : "")}
-            onClick={() => onChange({ id: g.id })}
-          >
-            <strong>{g.name}</strong>
-            <p>{g.description}</p>
-          </button>
-        ))}
-      </div>
+      {value?.id === "trio" && (
+        <div className="trio-select">
+          {[0, 1, 2].map((i) => (
+            <label key={i}>
+              Роль {i + 1}
+              <select
+                value={value.roles?.[i]?.id || ""}
+                onChange={(e) => {
+                  const chosen = roles.find((r) => r.id === e.target.value);
+                  if (!chosen) return;
+                  const cast = [...(value.roles || [])];
+                  cast[i] = {
+                    id: chosen.id,
+                    name: chosen.name,
+                    instructions: chosen.instructions,
+                  };
+                  onChange({ ...value, roles: cast });
+                }}
+              >
+                <option value="" disabled>
+                  Выберите роль
+                </option>
+                {roles.map((r) => (
+                  <option
+                    value={r.id}
+                    key={r.id}
+                    disabled={value.roles?.some(
+                      (x, j) => j !== i && x?.id === r.id,
+                    )}
+                  >
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
       {value?.id === "board" && (
         <>
           <label>
@@ -57,23 +83,6 @@ export function GameSettings({
               ))}
             </select>
           </label>
-          <div className="critic-board">
-            {criticBoard
-              .filter((c) => !value.character || c.id === value.character)
-              .map((c) => (
-                <article key={c.id}>
-                  <strong>{c.name}</strong>
-                  <small>{c.position}</small>
-                  <blockquote>{c.line}</blockquote>
-                  <p>{c.tactic}</p>
-                </article>
-              ))}
-          </div>
-          <p className="hint">
-            Accusation → ваш comeback → roast логики → три plot twists → ваш mic
-            drop → короткий English Upgrade. Можно сказать «не могу, возьми
-            микрофон» или остановить игру.
-          </p>
         </>
       )}
       {value?.id === "future" && (
@@ -116,15 +125,6 @@ export function GameSettings({
             по смысловым подсказкам.
           </p>
         </label>
-      )}
-      {value && (
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => onChange(undefined)}
-        >
-          Вернуться к своему сценарию без игрового шаблона
-        </button>
       )}
     </div>
   );

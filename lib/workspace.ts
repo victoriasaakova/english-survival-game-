@@ -3,20 +3,30 @@ export type Role = {
   id: string;
   name: string;
   description: string;
+  theme?: string;
   instructions: string;
 };
 export type Message = {
   id: string;
   author: "user" | "assistant";
+  origin?: "ChatGPT";
   text: string;
   at: string;
 };
+export const bookSections = [
+  "Мои истории",
+  "Убеждения и рефрейминги",
+  "Карьерные материалы",
+  "Видение будущего",
+] as const;
+export type BookSection = (typeof bookSections)[number];
 export type Entry = {
   id: string;
   lessonId: string;
   topic: string;
   title: string;
   text: string;
+  section?: BookSection;
   kind: "Мои слова" | "Вывод ИИ" | "Карьерный материал" | "Письменная работа";
   evidence: string;
   created: string;
@@ -35,7 +45,12 @@ export type Vocabulary = {
     introduced: string;
     passed: number[];
     retry: string | null;
-    history: { date: string; success: boolean; evidence: string }[];
+    history: {
+      date: string;
+      success: boolean;
+      evidence: string;
+      assessor?: "self" | "coach";
+    }[];
   };
 };
 export type Question = {
@@ -52,6 +67,9 @@ export type Exercise = {
   questions: Question[];
   answers: Record<string, string>;
   submitted: boolean;
+  topic?: string;
+  level?: string;
+  improvements?: string[];
   feedback?: string;
 };
 export type Note = {
@@ -77,12 +95,15 @@ export type Conversation = {
   note?: Note;
   parentId?: string;
   game?: GameConfig;
+  delivery?: "text" | "voice";
   duration?: 15 | 30;
   referenceText?: string;
   referenceSource?: string;
+  voiceImports?: string[];
 };
 export type Workspace = {
   version: 2;
+  flowVersion?: 1;
   level: string;
   goal: string;
   name: string;
@@ -98,34 +119,46 @@ export type Workspace = {
 export const defaultRoles: Role[] = [
   {
     id: "career",
-    name: "Рекрутер / продакт",
-    description: "Собеседования, профессиональные истории, рабочий английский.",
+    name: "Рекрутер",
+    theme: "Профессиональная",
+    description: "Собеседования и карьерные истории",
     instructions:
-      "Act as a recruiter or product manager depending on my request. Simulate realistic interviews, challenge vague answers, ask follow-up questions, help with product reasoning, presentations and career narratives. Separate feedback on English from feedback on the substance. Do not invent my career achievements.",
+      "Interview me for the role I specify. Ask one follow-up at a time. Separate English feedback from the substance. Never invent achievements.",
   },
   {
-    id: "personal",
-    name: "Личный собеседник",
-    description: "Мои истории, отношения, психология и видение себя.",
+    id: "product",
+    name: "Продакт",
+    theme: "Профессиональная",
+    description: "Продуктовые решения и презентации",
     instructions:
-      "Discuss my personal stories, relationships, psychology and self-image in depth. Ask thoughtful questions without assuming facts. Help me articulate nuance in English. Do not diagnose me or present interpretations as established facts.",
+      "Act as my product counterpart. Discuss users, scope, evidence and trade-offs in my actual situation. Ask one question at a time.",
   },
   {
     id: "coach",
-    name: "Селф-коуч",
-    description: "Убеждения, рефрейминг, будущая я и выбранные мной игры.",
+    name: "Коуч",
+    theme: "Личная",
+    description: "Личные истории и рефрейминг",
     instructions:
-      "Help me examine beliefs, reframe situations and imagine my future self. If I request a roast, challenge the belief directly, not my worth. Distinguish what I said from your hypotheses. Follow the game or exercise I choose; do not impose one.",
+      "Discuss my situation and beliefs. Separate my words, interpretations and hopes. Follow the mode I chose. Do not diagnose.",
+  },
+  {
+    id: "esoteric",
+    name: "Эзотерик",
+    theme: "Личная",
+    description: "Символы и личные интерпретации",
+    instructions:
+      "Explore my chosen symbolic perspective in English. Present interpretations as possibilities. Never predict outcomes or state interpretations as facts.",
   },
 ];
 export function freshWorkspace(): Workspace {
   return {
     version: 2,
+    flowVersion: 1,
     level: "B2",
     goal: "C1",
     name: "",
     rules:
-      "Общайся на английском на уровне B2–C1. Я сама задаю тему и могу менять ход занятия. Объясняй сложные исправления по-русски, когда я прошу. Исправляй конкретно, без автоматической похвалы. Не упрощай до начального уровня.",
+      "Мой уровень B2, цель C1. Давай материал уровня C1. Я задаю тему и ход урока. Исправляй английский по моему запросу или в конце занятия. Следуй выбранной роли.",
     roles: structuredClone(defaultRoles),
     lessons: [],
     vocabulary: [],
@@ -142,7 +175,74 @@ export function migrate(value: unknown): Workspace {
   const v = value as Record<string, unknown>;
   if (v.version === 2) {
     validateWorkspace(v);
-    return v as unknown as Workspace;
+    const state = v as unknown as Workspace;
+    if (state.flowVersion === 1) return state;
+    // Detach only the two generated source cards. Keep conversations and drafts the learner started there.
+    const obsolete = new Set(
+      state.lessons
+        .filter(
+          (l) =>
+            ["source:master:2026-11", "source:board:2026-11"].includes(l.id) &&
+            l.format === "Импортированный конспект" &&
+            l.referenceSource !== "Импорт из ChatGPT" &&
+            !l.messages.length &&
+            !l.draft &&
+            !state.entries.some((e) => e.lessonId === l.id) &&
+            !state.lessons.some((child) => child.parentId === l.id),
+        )
+        .map((l) => l.id),
+    );
+    const roles = state.roles.map((r) => {
+      const base = defaultRoles.find((b) => b.id === r.id);
+      if (!base) return r;
+      const oldDefaultName =
+        r.id === "career"
+          ? "Рекрутер / продакт"
+          : r.id === "coach"
+            ? "Селф-коуч"
+            : "";
+      return {
+        ...r,
+        name: r.name === oldDefaultName ? base.name : r.name,
+        theme: r.theme || base.theme,
+        instructions:
+          r.id === "career" &&
+          r.instructions ===
+            "Act as a recruiter or product manager depending on my request. Simulate realistic interviews, challenge vague answers, ask follow-up questions, help with product reasoning, presentations and career narratives. Separate feedback on English from feedback on the substance. Do not invent my career achievements."
+            ? base.instructions
+            : r.instructions,
+      };
+    });
+    for (const role of defaultRoles.filter((r) =>
+      ["product", "esoteric"].includes(r.id),
+    ))
+      if (!roles.some((r) => r.id === role.id)) roles.push({ ...role });
+    return {
+      ...state,
+      flowVersion: 1,
+      roles,
+      lessons: state.lessons.filter((l) => !obsolete.has(l.id)),
+      vocabulary: state.vocabulary.map((w) =>
+        obsolete.has(w.lessonId) ? { ...w, lessonId: "" } : w,
+      ),
+      exercises: state.exercises.map((e) =>
+        obsolete.has(e.lessonId)
+          ? {
+              ...e,
+              lessonId: "",
+              title: e.title
+                .replace(
+                  /^(?:Master Vocabulary & Lesson Review · 8 ноября|Inner Critic Board · 18 ноября) · /,
+                  "",
+                )
+                .replace(/^Grammar /, "Грамматика · "),
+              topic: e.lessonId.includes("board")
+                ? "Рефрейминг"
+                : "Работа и личные темы",
+            }
+          : e,
+      ),
+    };
   }
   if (
     v.version !== 1 ||
@@ -165,7 +265,7 @@ export function migrate(value: unknown): Workspace {
     id: l.id,
     title: titles[l.quest] || "Сохранённый урок",
     topic: "Архив первой версии",
-    role: structuredClone(defaultRoles[1]),
+    role: structuredClone(defaultRoles[2]),
     format: "Архив",
     focus: [],
     request: "",
@@ -288,6 +388,7 @@ export type Analysis = {
     title: string;
     text: string;
     kind: Entry["kind"];
+    section?: BookSection;
     evidence: string;
   }[];
 };
@@ -313,7 +414,15 @@ export function applyAnalysis(
               w.expression.trim().toLowerCase() && o.topic === w.topic,
         ) === i,
     )
-    .map((w) => ({ ...w, id: id(), lessonId }));
+    .map((w) => {
+      const previous = s.vocabulary.find(
+        (old) =>
+          old.lessonId === lessonId &&
+          old.expression.trim().toLowerCase() ===
+            w.expression.trim().toLowerCase(),
+      );
+      return previous || { ...w, id: "analysis:" + id(), lessonId };
+    });
   const entries = a.entries
     .filter((e) => e.evidence.trim() && userText.includes(e.evidence))
     .map((e) => ({
@@ -340,7 +449,9 @@ export function applyAnalysis(
         : l,
     ),
     vocabulary: [
-      ...s.vocabulary.filter((w) => w.lessonId !== lessonId),
+      ...s.vocabulary.filter(
+        (w) => !vocabulary.some((next) => next.id === w.id),
+      ),
       ...vocabulary,
     ],
     entries: [

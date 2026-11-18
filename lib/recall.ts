@@ -33,18 +33,25 @@ export function recordRecall(
   assisted: boolean,
   novel: boolean,
   evidence: string,
+  assessor: "self" | "coach" = "coach",
 ): Vocabulary {
   const old = legacy(w);
   if (!old) throw Error("Сначала активируйте выражение");
   const reviewed = reviewWord(old, date, passed, assisted, novel, evidence);
   return {
     ...w,
-    retrieval: passed && !assisted && novel ? "independent" : w.retrieval,
+    retrieval:
+      assessor === "coach" && passed && !assisted && novel
+        ? "independent"
+        : w.retrieval,
     review: {
       introduced: reviewed.introduced,
       passed: reviewed.passed,
       retry: reviewed.retry,
-      history: reviewed.reviews,
+      history: [
+        ...w.review!.history,
+        { ...reviewed.reviews.at(-1)!, assessor },
+      ],
     },
   };
 }

@@ -14,7 +14,10 @@ test("personal defaults are B2 to C1, roles can be changed independently", () =>
     b = freshWorkspace();
   assert.equal(a.level, "B2");
   assert.equal(a.goal, "C1");
-  assert.equal(a.roles.length, 3);
+  assert.deepEqual(
+    a.roles.map((r) => r.name),
+    ["Рекрутер", "Продакт", "Коуч", "Эзотерик"],
+  );
   a.roles[0].name = "Custom";
   assert.notEqual(a.roles[0].name, b.roles[0].name);
 });

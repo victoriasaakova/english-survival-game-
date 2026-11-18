@@ -1,4 +1,5 @@
 import { gameInstructions } from "@/lib/games";
+import { isAnalysis } from "@/lib/lesson-review";
 import { authorize } from "@/lib/server";
 import { fullLessonPrompt } from "@/lib/lesson-prompt";
 export async function POST(req: Request) {
@@ -43,35 +44,7 @@ export async function POST(req: Request) {
     const data = await r.json();
     const out = JSON.parse(data.choices[0].message.content);
     if (b.task === "chat" && typeof out.reply !== "string") throw Error();
-    if (b.task === "analyse") {
-      if (
-        !Array.isArray(out.sections) ||
-        out.sections.length < 6 ||
-        out.sections.some(
-          (s: { title: string; text: string }) =>
-            typeof s.title !== "string" || typeof s.text !== "string",
-        )
-      )
-        throw Error();
-      for (const k of [
-        "summary",
-        "languageFeedback",
-        "roleFeedback",
-        "nextLesson",
-      ])
-        if (typeof out[k] !== "string") throw Error();
-      if (!Array.isArray(out.vocabulary) || !Array.isArray(out.entries))
-        throw Error();
-      for (const w of out.vocabulary)
-        for (const k of ["topic", "expression", "meaning", "example"])
-          if (typeof w[k] !== "string") throw Error();
-      for (const e of out.entries) {
-        for (const k of ["topic", "title", "text", "kind", "evidence"])
-          if (typeof e[k] !== "string") throw Error();
-        if (!["Мои слова", "Вывод ИИ", "Карьерный материал"].includes(e.kind))
-          throw Error();
-      }
-    }
+    if (b.task === "analyse" && !isAnalysis(out)) throw Error();
     if (
       b.task === "practice" &&
       (!Array.isArray(out.questions) ||
@@ -84,7 +57,12 @@ export async function POST(req: Request) {
         ))
     )
       throw Error();
-    if (b.task === "evaluate" && typeof out.feedback !== "string")
+    if (
+      b.task === "evaluate" &&
+      (typeof out.feedback !== "string" ||
+        !Array.isArray(out.improvements) ||
+        out.improvements.some((x: unknown) => typeof x !== "string"))
+    )
       throw Error();
     if (
       b.task === "recall" &&
